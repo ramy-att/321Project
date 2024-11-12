@@ -7,8 +7,8 @@ function App() {
   const [state, setState] = useState<"error" | "found" | "not found" | "">("");
   const [response, setResponse] = useState("");
 
-  const scanPrivacyPolicy = async (policy: string) => {
-    const url = "https://api.groq.com/openai/v1/chat/completions";
+  const scanPrivacyPolicy = async (url: string) => {
+    const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
     const headers = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${process.env.VITE_API_KEY}`,
@@ -19,13 +19,17 @@ function App() {
       messages: [
         {
           role: "user",
-          content: `Analyze the following privacy policy and give a score to each category the policy mentions, use good formatting: ${policy}`,
+          content: `Detect if this page is a privacy policy page: ${url}. If there is no privacy policy on the page just say: "No privacy policy detected.", 
+          do not try to summerize anything else.
+          If it is a privacy policy page, analyze the privacy police and give a score to each category the policy mentions, 
+          use markdown formatting. Name the url being accessed at the top, then show each category and it's score clearly 
+          and a description underneath eacth category explanining more.`,
         },
       ],
     });
 
     try {
-      const response = await fetch(url, {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: headers,
         body: body,
@@ -40,19 +44,23 @@ function App() {
   };
 
   const findPrivacyPolicy = () => {
-    const links = Array.from(
-      document.querySelectorAll(
-        "a, h1, h2, p, [class*='policy'], [id*='policy']"
-      )
-    ).filter((element) =>
-      element.textContent?.toLowerCase().includes("privacy policy")
-    );
-    if (links.length > 0) {
-      const allTextContent = document.body.innerText; // Collects all text on the page
-      scanPrivacyPolicy(allTextContent);
-    } else {
-      setState("not found");
-    }
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTabUrl = tabs[0]?.url;
+      if (activeTabUrl) {
+        const links = Array.from(
+          document.querySelectorAll(
+            "a, h1, h2, p, [class*='policy'], [id*='policy']"
+          )
+        ).filter((element) =>
+          element.textContent?.toLowerCase().includes("privacy policy")
+        );
+        if (links.length > 0) {
+          scanPrivacyPolicy(activeTabUrl);
+        } else {
+          setState("not found");
+        }
+      }
+    });
   };
 
   const scanPage = () => {
