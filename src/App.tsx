@@ -2,6 +2,18 @@ import { useState } from "react";
 import "./App.css";
 import ReactMarkdown from "react-markdown";
 
+const privacyKeywords = [
+  "privacy policy",
+  "data policy",
+  "data protection policy",
+  "privacy statement",
+  "policy agreement",
+  "privacy agreement",
+  "data privacy",
+  "data protection",
+  "personal information",
+];
+
 function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [state, setState] = useState<"error" | "found" | "not found" | "">("");
@@ -43,24 +55,27 @@ function App() {
     }
   };
 
-  const findPrivacyPolicy = () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const activeTabUrl = tabs[0]?.url;
-      if (activeTabUrl) {
-        const links = Array.from(
-          document.querySelectorAll(
-            "a, h1, h2, p, [class*='policy'], [id*='policy']"
-          )
-        ).filter((element) =>
-          element.textContent?.toLowerCase().includes("privacy policy")
-        );
-        if (links.length > 0) {
-          scanPrivacyPolicy(activeTabUrl);
-        } else {
-          setState("not found");
-        }
-      }
-    });
+  const findPrivacyPolicy = async () => {
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const activeTabUrl = tab?.url;
+    if (activeTabUrl && tab.id) {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          const relevantTexts = Array.from(
+            document.querySelectorAll("a, h1, h2, span")
+          ) as HTMLElement[];
+          const found = relevantTexts.some((t) =>
+            privacyKeywords.includes(t.innerText?.toLowerCase() ?? "")
+          );
+          if (found) {
+            scanPrivacyPolicy(activeTabUrl);
+          } else {
+            setState("not found");
+          }
+        },
+      });
+    }
   };
 
   const scanPage = () => {
