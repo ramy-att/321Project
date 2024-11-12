@@ -63,17 +63,17 @@ function App() {
   const reset = () => {
     setState("");
     setResponse("");
-    setIsScanning(false)
+    setIsScanning(false);
   };
 
   return (
     <div className="extension">
       {state === "found" && response ? (
         <div>
-          <p className="goBack" onClick={reset}>{"<- Go Back"}</p>
-          <div className="card">
-            <ReactMarkdown>{response}</ReactMarkdown>
-          </div>
+          <p className="goBack" onClick={reset}>
+            {"<- Go Back"}
+          </p>
+          <ReactMarkdown>{response}</ReactMarkdown>
         </div>
       ) : state === "not found" ? (
         <p>No privacy policy found on this page.</p>
