@@ -5,7 +5,7 @@
     "description": "An extension to analyze privacy policies.",
     "action": {
       "default_popup": "index.html",
-      "default_icon": "logo.svg"
+      "default_icon": "logo.png"
     },
     "permissions": [
       "activeTab"
