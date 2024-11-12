@@ -1,23 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import ReactMarkdown from "react-markdown";
-
-const privacyKeywords = [
-  "privacy policy",
-  "data policy",
-  "data protection policy",
-  "privacy statement",
-  "policy agreement",
-  "privacy agreement",
-  "data privacy",
-  "data protection",
-  "personal information",
-];
 
 function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [state, setState] = useState<"error" | "found" | "not found" | "">("");
   const [response, setResponse] = useState("");
+  const [url, setURL] = useState("");
 
   const scanPrivacyPolicy = async (url: string) => {
     const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
@@ -31,10 +20,10 @@ function App() {
       messages: [
         {
           role: "user",
-          content: `Detect if this page is a privacy policy page: ${url}. If there is no privacy policy on the page just say: "No privacy policy detected.", 
+          content: `Detect if this page is a privacy policy page: ${url}. If there is no privacy policy on the page just say: "No privacy policy detected.",
           do not try to summerize anything else.
-          If it is a privacy policy page, analyze the privacy police and give a score to each category the policy mentions, 
-          use markdown formatting. Name the url being accessed at the top, then show each category and it's score clearly 
+          If it is a privacy policy page, analyze the privacy police and give a score to each category the policy mentions,
+          use markdown formatting. Name the url being accessed at the top, then show each category and it's score clearly
           and a description underneath eacth category explanining more.`,
         },
       ],
@@ -57,22 +46,37 @@ function App() {
 
   const findPrivacyPolicy = async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const activeTabUrl = tab?.url;
+    const activeTabUrl = tab?.url as string;
+    setURL(activeTabUrl);
+
     if (activeTabUrl && tab.id) {
+      let found = false;
+      let relevantTexts: HTMLElement[] = [];
       chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => {
-          const relevantTexts = Array.from(
+          const privacyKeywords = [
+            "privacy policy",
+            "data policy",
+            "data protection policy",
+            "privacy statement",
+            "policy agreement",
+            "privacy agreement",
+            "data privacy",
+            "data protection",
+            "personal information",
+          ];
+
+          relevantTexts = Array.from(
             document.querySelectorAll("a, h1, h2, span")
           ) as HTMLElement[];
-          const found = relevantTexts.some((t) =>
-            privacyKeywords.includes(t.innerText?.toLowerCase() ?? "")
+
+          found = relevantTexts.some((t) =>
+            privacyKeywords.some((keyword) =>
+              t.innerText?.toLowerCase().includes(keyword)
+            )
           );
-          if (found) {
-            scanPrivacyPolicy(activeTabUrl);
-          } else {
-            setState("not found");
-          }
+          chrome.runtime.sendMessage({ found });
         },
       });
     }
@@ -89,6 +93,16 @@ function App() {
     setIsScanning(false);
   };
 
+  useEffect(() => {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message.found) {
+        setState("found");
+        scanPrivacyPolicy(url);
+      } else {
+        setState("not found");
+      }
+    });
+  });
   return (
     <div className="extension">
       {state === "found" && response ? (
