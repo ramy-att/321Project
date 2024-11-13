@@ -6,7 +6,6 @@ function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [state, setState] = useState<"error" | "found" | "not found" | "">("");
   const [response, setResponse] = useState("");
-  const [url, setURL] = useState("");
 
   const scanPrivacyPolicy = async (url: string) => {
     const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
@@ -47,14 +46,14 @@ function App() {
   const findPrivacyPolicy = async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const activeTabUrl = tab?.url as string;
-    setURL(activeTabUrl);
 
     if (activeTabUrl && tab.id) {
       let found = false;
       let relevantTexts: HTMLElement[] = [];
       chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: () => {
+        args: [activeTabUrl],
+        func: (activeTabUrl) => {
           const privacyKeywords = [
             "privacy policy",
             "data policy",
@@ -76,7 +75,7 @@ function App() {
               t.innerText?.toLowerCase().includes(keyword)
             )
           );
-          chrome.runtime.sendMessage({ found });
+          chrome.runtime.sendMessage({ found, activeTabUrl });
         },
       });
     }
@@ -97,12 +96,13 @@ function App() {
     chrome.runtime.onMessage.addListener((message) => {
       if (message.found) {
         setState("found");
-        scanPrivacyPolicy(url);
+        scanPrivacyPolicy(message.activeTabUrl);
       } else {
         setState("not found");
       }
     });
-  });
+  }, []);
+
   return (
     <div className="extension">
       {state === "found" && response ? (
