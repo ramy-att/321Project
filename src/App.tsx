@@ -1,12 +1,61 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import ReactMarkdown from "react-markdown";
+import { Button, Input, Progress } from "rsuite";
+import "rsuite/dist/rsuite.min.css";
+import ArowBackIcon from "@rsuite/icons/ArowBack";
 
+const categories = [
+  "dataCollected",
+  "dataSharing",
+  "dataSold",
+  "optOutOptions",
+  "dataSecurity",
+  "dataDeletion",
+  "policyClarity",
+  "purpose",
+];
+
+const labels: Record<string, string> = {
+  dataCollected: "Data Collection",
+  dataSharing: "Data Sharing",
+  dataSold: "Data Sold",
+  optOutOptions: "Opt-Out Options",
+  dataSecurity: "Data Security",
+  dataDeletion: "Data Deletion",
+  policyClarity: "Policy Clarity",
+  purpose: "Purpose of data collection",
+};
+
+const generatePrompt = (url: string) => {
+  return `
+  Detect if this page is a privacy policy page: ${url}. If there is no privacy policy on the page just say: "No privacy policy detected.",
+  do not try to summerize anything else.
+  If it is a privacy policy page, analyze the following competencies and give a score (as a number between 1-10) to each category the policy mentioned:
+  "dataCollected: Determines what types of data the platform gathers and how comprehensive the list is.
+  purpose: Evaluates how the collected data is used, ensuring purposes are legitimate and reasonable.
+  dataSharing: Checks if user data is shared, under what conditions, and with whom.
+  dataSold: Assesses if personal data is sold, a critical point for user privacy.
+  optOutOptions: Reviews the availability and simplicity of mechanisms for users to opt out of data sharing or collection.
+  dataSecurity: Investigates the methods used to secure data, such as encryption and audits.
+  dataDeletion: Looks at whether users can delete their data and how straightforward the process is.
+  policyClarity: Measures how understandable and accessible the policy language is to a general audience."
+  
+  Return json. Only return the json, don't say anything like "Here is the output". With the score value {scores:{dataCollected, dataSharing, dataSold, optOutOptions, dataSecurity, dataDeletion, policyClarity}, description}
+  It is very important to return valid json following this, only return valid json.
+  Description attribute is an explanation of the scores"
+  `;
+};
+
+interface IResponse {
+  scores: Record<string, number>;
+  description: string;
+}
 function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [state, setState] = useState<"error" | "found" | "not found" | "">("");
-  const [response, setResponse] = useState("");
+  const [response, setResponse] = useState<IResponse>();
   const [link, setLink] = useState("");
+  const [total, setTotal] = useState<number>();
 
   const scanPrivacyPolicy = async (url: string) => {
     const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
@@ -17,14 +66,11 @@ function App() {
 
     const body = JSON.stringify({
       model: "llama3-8b-8192",
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "user",
-          content: `Detect if this page is a privacy policy page: ${url}. If there is no privacy policy on the page just say: "No privacy policy detected.",
-          do not try to summerize anything else.
-          If it is a privacy policy page, analyze the privacy police and give a score to each category the policy mentions,
-          use markdown formatting. Name the url being accessed at the top, then show each category and it's score clearly
-          and a description underneath eacth category explanining more.`,
+          content: generatePrompt(url),
         },
       ],
     });
@@ -38,7 +84,17 @@ function App() {
 
       const data = await response.json();
       setState("found");
-      setResponse(data.choices[0].message.content);
+      console.log(JSON.parse(data.choices[0].message.content));
+      const json = JSON.parse(data.choices[0].message.content);
+      setResponse(json);
+      const total = parseFloat(
+        (
+          (categories.reduce((sum, c) => sum + json.scores[c], 0) /
+            categories.length) *
+          10
+        ).toPrecision(3)
+      );
+      setTotal(total);
     } catch (error) {
       setState("error");
     }
@@ -89,38 +145,93 @@ function App() {
 
   const submitLink = () => {
     scanPrivacyPolicy(link);
+    setIsScanning(true);
   };
 
   const reset = () => {
     setState("");
-    setResponse("");
+    setResponse(undefined);
     setIsScanning(false);
     setLink("");
   };
 
-  const onChangeHandler = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setLink(event.target.value);
+  const onChangeHandler = (v: string) => {
+    setLink(v);
   };
 
-  useEffect(() => {
-    chrome.runtime.onMessage.addListener((message) => {
-      if (message.found) {
-        setState("found");
-        scanPrivacyPolicy(message.activeTabUrl);
-      } else {
-        setState("not found");
-      }
-    });
-  }, []);
+  // useEffect(() => {
+  //   chrome.runtime.onMessage.addListener((message) => {
+  //     if (message.found) {
+  //       setState("found");
+  //       scanPrivacyPolicy(message.activeTabUrl);
+  //     } else {
+  //       setState("not found");
+  //     }
+  //   });
+  // }, []);
 
   return (
     <div className="extension">
-      {state === "found" && response ? (
+      {state === "found" && response && total ? (
         <div>
           <p className="goBack" onClick={reset}>
-            {"<- Go Back"}
+            <ArowBackIcon /> Go back
           </p>
-          <ReactMarkdown>{response}</ReactMarkdown>
+          {categories.map((c) => {
+            const val = response.scores[c] * 10;
+            const color =
+              val > 70 ? "#4caf50" : val > 40 ? "#ffc107" : "#f44336";
+            return (
+              <div>
+                {labels[c as string]}
+                <Progress.Line key={c} percent={val} strokeColor={color} />
+              </div>
+            );
+          })}
+          <div className="circle-container">
+            <div className="circle">
+              <Progress.Circle
+                percent={total}
+                strokeColor={
+                  total > 70 ? "#4caf50" : total > 40 ? "#ffc107" : "#f44336"
+                }
+              />
+            </div>
+          </div>
+          <ul className="explanation">
+            <li>
+              <b>Data Collected</b>: Determines what types of data the platform
+              gathers and how comprehensive the list is.
+            </li>
+            <li>
+              <b>Purpose of Data Use</b>: Evaluates how the collected data is
+              used, ensuring purposes are legitimate and reasonable.
+            </li>
+            <li>
+              <b>Data Sharing with Third Parties</b>: Checks if user data is
+              shared, under what conditions, and with whom.
+            </li>
+            <li>
+              <b>Data Sold to Third Parties</b>: Assesses if personal data is
+              sold, a critical point for user privacy.
+            </li>
+            <li>
+              <b>Opt-Out Options</b>: Reviews the availability and simplicity of
+              mechanisms for users to opt out of data sharing or collection.
+            </li>
+            <li>
+              <b>Data Security</b>: Investigates the methods used to secure
+              data, such as encryption and audits.
+            </li>
+            <li>
+              <b>Data Deletion</b>: Looks at whether users can delete their data
+              and how straightforward the process is.
+            </li>
+            <li>
+              <b>Policy Clarity</b>: Measures how understandable and accessible
+              the policy language is to a general audience.
+            </li>
+          </ul>
         </div>
       ) : state === "not found" ? (
         <p>No privacy policy found on this page.</p>
@@ -128,14 +239,14 @@ function App() {
         <div>
           <div>
             <h1 className="title">Policy Analyzer</h1>
-            <p>
+            <p className="desc">
               Let the extension scan the page and analyze the privacy policy if
               there is any.
             </p>
             <div className="card">
-              <button onClick={scanPage}>
+              <Button appearance="primary" onClick={scanPage}>
                 {isScanning ? "Scanning..." : "Scan Page"}
-              </button>
+              </Button>
             </div>
           </div>
           <div className="seperator-container">
@@ -146,14 +257,21 @@ function App() {
           <div className="second-card">
             <p>Provide a link to any privacy policy:</p>
             <div className="card">
-              <textarea
+              <Input
+                className="textarea"
+                as="textarea"
+                rows={3}
+                placeholder="Provide a link to any privacy policy"
                 value={link}
-                rows={2}
                 onChange={onChangeHandler}
-                className="text-area"
-                placeholder="Provide a link to any privacy polic"
               />
-              <button onClick={submitLink}>Analyze</button>
+              <Button
+                appearance="primary"
+                onClick={submitLink}
+                disabled={!link}
+              >
+                {isScanning ? "Analyzing..." : "Analyze"}
+              </Button>
             </div>
           </div>
         </div>
