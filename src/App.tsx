@@ -6,6 +6,7 @@ function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [state, setState] = useState<"error" | "found" | "not found" | "">("");
   const [response, setResponse] = useState("");
+  const [link, setLink] = useState("");
 
   const scanPrivacyPolicy = async (url: string) => {
     const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
@@ -86,10 +87,19 @@ function App() {
     findPrivacyPolicy();
   };
 
+  const submitLink = () => {
+    scanPrivacyPolicy(link);
+  };
+
   const reset = () => {
     setState("");
     setResponse("");
     setIsScanning(false);
+    setLink("");
+  };
+
+  const onChangeHandler = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setLink(event.target.value);
   };
 
   useEffect(() => {
@@ -116,15 +126,35 @@ function App() {
         <p>No privacy policy found on this page.</p>
       ) : (
         <div>
-          <h1 className="title">Policy Analyzer</h1>
-          <p>
-            The extension read your page, finds the privacy policy and analyzes
-            it.
-          </p>
-          <div className="card">
-            <button onClick={scanPage}>
-              {isScanning ? "Scanning..." : "Scan Page"}
-            </button>
+          <div>
+            <h1 className="title">Policy Analyzer</h1>
+            <p>
+              Let the extension scan the page and analyze the privacy policy if
+              there is any.
+            </p>
+            <div className="card">
+              <button onClick={scanPage}>
+                {isScanning ? "Scanning..." : "Scan Page"}
+              </button>
+            </div>
+          </div>
+          <div className="seperator-container">
+            <hr className="seperator" />
+            <span>Or</span>
+            <hr className="seperator" />
+          </div>
+          <div className="second-card">
+            <p>Provide a link to any privacy policy:</p>
+            <div className="card">
+              <textarea
+                value={link}
+                rows={2}
+                onChange={onChangeHandler}
+                className="text-area"
+                placeholder="Provide a link to any privacy polic"
+              />
+              <button onClick={submitLink}>Analyze</button>
+            </div>
           </div>
         </div>
       )}
