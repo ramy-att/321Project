@@ -159,16 +159,16 @@ function App() {
     setLink(v);
   };
 
-  // useEffect(() => {
-  //   chrome.runtime.onMessage.addListener((message) => {
-  //     if (message.found) {
-  //       setState("found");
-  //       scanPrivacyPolicy(message.activeTabUrl);
-  //     } else {
-  //       setState("not found");
-  //     }
-  //   });
-  // }, []);
+  useEffect(() => {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message.found) {
+        setState("found");
+        scanPrivacyPolicy(message.activeTabUrl);
+      } else {
+        setState("not found");
+      }
+    });
+  }, []);
 
   return (
     <div className="extension">
@@ -199,35 +199,35 @@ function App() {
             </div>
           </div>
           <ul className="explanation">
-            <li>
+            <li key="exp1">
               <b>Data Collected</b>: Determines what types of data the platform
               gathers and how comprehensive the list is.
             </li>
-            <li>
+            <li key="exp2">
               <b>Purpose of Data Use</b>: Evaluates how the collected data is
               used, ensuring purposes are legitimate and reasonable.
             </li>
-            <li>
+            <li key="exp3">
               <b>Data Sharing with Third Parties</b>: Checks if user data is
               shared, under what conditions, and with whom.
             </li>
-            <li>
+            <li key="exp4">
               <b>Data Sold to Third Parties</b>: Assesses if personal data is
               sold, a critical point for user privacy.
             </li>
-            <li>
+            <li key="exp5">
               <b>Opt-Out Options</b>: Reviews the availability and simplicity of
               mechanisms for users to opt out of data sharing or collection.
             </li>
-            <li>
+            <li key="exp6">
               <b>Data Security</b>: Investigates the methods used to secure
               data, such as encryption and audits.
             </li>
-            <li>
+            <li key="exp7">
               <b>Data Deletion</b>: Looks at whether users can delete their data
               and how straightforward the process is.
             </li>
-            <li>
+            <li key="exp8">
               <b>Policy Clarity</b>: Measures how understandable and accessible
               the policy language is to a general audience.
             </li>
