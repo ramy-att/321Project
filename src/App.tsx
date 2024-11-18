@@ -40,9 +40,11 @@ const generatePrompt = (url: string) => {
   dataDeletion: Looks at whether users can delete their data and how straightforward the process is.
   policyClarity: Measures how understandable and accessible the policy language is to a general audience."
   
-  Return json. Only return the json, don't say anything like "Here is the output". With the score value {scores:{dataCollected, dataSharing, dataSold, optOutOptions, dataSecurity, dataDeletion, policyClarity}, description}
+  Return json. Only return the json, don't say anything like "Here is the output". With the score value 
+  {scores:{dataCollected, dataSharing, dataSold, optOutOptions, dataSecurity, dataDeletion, policyClarity}, description}
+  Description attribute is a reasoning of the score for each category. Explain what they do well and what 
+  they do poorly for each category. Description should be an object that has each category as a key and value as an explanation of the score given
   It is very important to return valid json following this, only return valid json.
-  Description attribute is an explanation of the scores"
   `;
 };
 
@@ -185,6 +187,8 @@ function App() {
               <div>
                 {labels[c as string]}
                 <Progress.Line key={c} percent={val} strokeColor={color} />
+                {response.description[c as any]}
+                <hr />
               </div>
             );
           })}
@@ -199,6 +203,7 @@ function App() {
             </div>
           </div>
           <ul className="explanation">
+            <p> Definitions</p>
             <li key="exp1">
               <b>Data Collected</b>: Determines what types of data the platform
               gathers and how comprehensive the list is.

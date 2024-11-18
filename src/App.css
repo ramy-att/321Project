@@ -106,6 +106,10 @@ button:focus-visible {
   width: 100px;
 }
 
-.explanation{
+.explanation {
   margin-top: 8px;
+}
+
+.label-bold {
+  font-weight: bold;
 }
