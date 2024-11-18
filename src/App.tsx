@@ -203,10 +203,6 @@ function App() {
               <b>Data Collected</b>: Determines what types of data the platform
               gathers and how comprehensive the list is.
             </li>
-            <li key="exp2">
-              <b>Purpose of Data Use</b>: Evaluates how the collected data is
-              used, ensuring purposes are legitimate and reasonable.
-            </li>
             <li key="exp3">
               <b>Data Sharing with Third Parties</b>: Checks if user data is
               shared, under what conditions, and with whom.
@@ -230,6 +226,10 @@ function App() {
             <li key="exp8">
               <b>Policy Clarity</b>: Measures how understandable and accessible
               the policy language is to a general audience.
+            </li>
+            <li key="exp2">
+              <b>Purpose of Data Use</b>: Evaluates how the collected data is
+              used, ensuring purposes are legitimate and reasonable.
             </li>
           </ul>
         </div>
