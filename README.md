@@ -2,6 +2,26 @@
 
 This extension allows you to scan a webpage for a privacy policy and analyze its content using an AI model. When a privacy policy is found, it provides an analysis and score for each category mentioned in the policy.
 
+Demo Link: https://drive.google.com/file/d/1-dcu1r4C6qN3W34658KO2wI9FwFcA4RQ/view?usp=sharing
+
+## Team Members
+
+Ruaid Usmani ID: 40212428 
+
+Ramy Attalla ID: 40205642 
+
+Tarek Elalfi ID: 40197527 
+
+[name] ID:  
+
+[name] ID:  
+
+[name] ID:  
+
+[name] ID:  
+
+
+
 ## Prerequisites
 
 Before you begin, make sure you have the following:
